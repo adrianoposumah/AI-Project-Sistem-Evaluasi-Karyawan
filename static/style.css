@@ -4,9 +4,9 @@ body {
   /* padding: 20px; */
   display: flex;
   justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  margin-top: 5%;
+  /* align-items: center; */
+  /* flex-direction: column; */
+  gap: 20px;
 }
 
 section {
@@ -14,8 +14,9 @@ section {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   background-color: #fff;
   padding: 20px;
-  width: 35%;
-  margin-top: 10px;
+  width: 45%;
+  /* position: fixed; */
+  /* overflow-y: scroll; */
 }
 
 button {
@@ -50,6 +51,12 @@ form .button {
   grid-column-end: 3;
   display: flex;
   justify-content: center;
+}
+
+form h3 {
+  grid-column-start: 1;
+  grid-column-end: 3;
+  margin-bottom: -1px;
 }
 form label {
   display: block;
