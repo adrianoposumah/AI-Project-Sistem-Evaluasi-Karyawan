@@ -1,9 +1,59 @@
 from flask import Flask, render_template, request
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
 
 app = Flask(__name__)
 
 # List to store evaluation results
 evaluations = []
+
+# Define fuzzy variables
+def define_fuzzy_variables():
+    management = ctrl.Antecedent(np.arange(0, 11, 1), 'management')
+    job_specific = ctrl.Antecedent(np.arange(0, 11, 1), 'job_specific')
+    personality = ctrl.Antecedent(np.arange(0, 11, 1), 'personality')
+    score = ctrl.Consequent(np.arange(0, 101, 1), 'score')
+
+    # Custom membership functions
+    management['poor'] = fuzz.trimf(management.universe, [0, 0, 2.5])
+    management['mediocre'] = fuzz.trimf(management.universe, [0, 2.5, 5])
+    management['average'] = fuzz.trimf(management.universe, [2.5, 5, 7.5])
+    management['decent'] = fuzz.trimf(management.universe, [5, 7.5, 10])
+    management['excellent'] = fuzz.trimf(management.universe, [7.5, 10, 10])
+
+    job_specific['poor'] = fuzz.trimf(job_specific.universe, [0, 0, 2.5])
+    job_specific['mediocre'] = fuzz.trimf(job_specific.universe, [0, 2.5, 5])
+    job_specific['average'] = fuzz.trimf(job_specific.universe, [2.5, 5, 7.5])
+    job_specific['decent'] = fuzz.trimf(job_specific.universe, [5, 7.5, 10])
+    job_specific['excellent'] = fuzz.trimf(job_specific.universe, [7.5, 10, 10])
+
+    personality['poor'] = fuzz.trimf(personality.universe, [0, 0, 2.5])
+    personality['mediocre'] = fuzz.trimf(personality.universe, [0, 2.5, 5])
+    personality['average'] = fuzz.trimf(personality.universe, [2.5, 5, 7.5])
+    personality['decent'] = fuzz.trimf(personality.universe, [5, 7.5, 10])
+    personality['excellent'] = fuzz.trimf(personality.universe, [7.5, 10, 10])
+
+    score['unsatisfactory'] = fuzz.trimf(score.universe, [0, 0, 46])
+    score['satisfactory'] = fuzz.trimf(score.universe, [45, 46, 66.5])
+    score['good'] = fuzz.trimf(score.universe, [59, 67, 80])
+    score['very_good'] = fuzz.trimf(score.universe, [73, 81, 93.5])
+    score['outstanding'] = fuzz.trimf(score.universe, [87, 100, 100])
+
+    return management, job_specific, personality, score
+
+# Define the fuzzy control system
+def define_fuzzy_control_system(management, job_specific, personality, score):
+    rule1 = ctrl.Rule(management['poor'] | job_specific['poor'] | personality['poor'], score['unsatisfactory'])
+    rule2 = ctrl.Rule(management['mediocre'] | job_specific['mediocre'] | personality['mediocre'], score['satisfactory'])
+    rule3 = ctrl.Rule(management['average'] | job_specific['average'] | personality['average'], score['good'])
+    rule4 = ctrl.Rule(management['decent'] | job_specific['decent'] | personality['decent'], score['very_good'])
+    rule5 = ctrl.Rule(management['excellent'] | job_specific['excellent'] | personality['excellent'], score['outstanding'])
+
+    scoring_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5])
+    scoring = ctrl.ControlSystemSimulation(scoring_ctrl)
+    
+    return scoring
 
 @app.route('/')
 def index():
@@ -54,50 +104,61 @@ def evaluate():
     total_B = sum(degree * weight for degree, weight in zip(degrees_B, sub_weights_B))
     total_C = sum(degree * weight for degree, weight in zip(degrees_C, sub_weights_C))
 
-    # Calculate total score
-    value_A = (total_A * weight_A)
-    value_B = (total_B * weight_B)
-    value_C = (total_C * weight_C)
+    # Normalize totals to a 0-10 scale for fuzzy logic
+    total_A_normalized = total_A * 10
+    total_B_normalized = total_B * 10
+    total_C_normalized = total_C * 10
 
-    total_score = value_A + value_B + value_C
-    total_score *= 100
+    weight_A = total_A_normalized * weight_A
+    weight_B = total_B_normalized * weight_B
+    weight_C = total_C_normalized * weight_C
 
-    # Determine evaluation result
-    if total_score < 46:
-        predikat = "Unsatisfactory"
-    elif 46 <= total_score < 66.5:
-        predikat = "Satisfactory"
-        if total_score >= 66:
-            predikat += " - Good"
-    elif 66.5 <= total_score < 80:
-        predikat = "Good"
-        if total_score < 67:
-            predikat = "Satisfactory - " + predikat
-        if total_score >= 79.5:
-            predikat += " - Very Good"
-    elif 80 <= total_score < 93.5:
-        predikat = "Very Good"
-        if total_score < 81:
-            predikat = "Good - " + predikat
-        if total_score >= 93:
-            predikat += " - Outstanding"
-    else:
-        predikat = "Outstanding"
-        if total_score < 94:
-            predikat = "Very Good - " + predikat
+    weight_A_normalized = weight_A * 10
+    weight_B_normalized = weight_B * 10
+    weight_C_normalized = weight_C * 10
+    # Define fuzzy variables and control system
+    management, job_specific, personality, score = define_fuzzy_variables()
+    scoring = define_fuzzy_control_system(management, job_specific, personality, score)
 
-    # Format the results to 4 decimal places
-    value_A = f"{value_A:.4f}"
-    value_B = f"{value_B:.4f}"
-    value_C = f"{value_C:.4f}"
+    # Pass inputs to the ControlSystem using Antecedent labels
+    scoring.input['management'] = total_A_normalized
+    scoring.input['job_specific'] = total_B_normalized
+    scoring.input['personality'] = total_C_normalized
+
+    # Crunch the numbers
+    scoring.compute()
+
+    # Get the score and determine the predikat based on memberships
+    total_score = scoring.output['score']
+
+    # Get membership values for score
+    score_membership = {
+        'unsatisfactory': fuzz.interp_membership(score.universe, score['unsatisfactory'].mf, total_score),
+        'satisfactory': fuzz.interp_membership(score.universe, score['satisfactory'].mf, total_score),
+        'good': fuzz.interp_membership(score.universe, score['good'].mf, total_score),
+        'very_good': fuzz.interp_membership(score.universe, score['very_good'].mf, total_score),
+        'outstanding': fuzz.interp_membership(score.universe, score['outstanding'].mf, total_score)
+    }
+
+    # Determine the predikat
+    predikat = []
+    for label, membership_value in score_membership.items():
+        if membership_value > 0:
+            predikat.append(label.replace('_', ' ').title())
+    
+    predikat = ' - '.join(predikat)
+
+    total_A = f"{weight_A_normalized:.4f}"
+    total_B = f"{weight_B_normalized:.4f}"
+    total_C = f"{weight_C_normalized:.4f}"
     total_score = f"{total_score:.4f}"
 
     # Save the evaluation result
     evaluations.append({
         'nama': nama,
-        'total_A': value_A,
-        'total_B': value_B,
-        'total_C': value_C,
+        'total_A': total_A,
+        'total_B': total_B,
+        'total_C': total_C,
         'predikat': predikat,
         'total_score': total_score
     })
