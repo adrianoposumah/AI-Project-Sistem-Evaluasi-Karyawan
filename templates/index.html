@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Employee Performance Evaluation</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <h1>Employee Performance Evaluation</h1>
+    <form action="/evaluate" method="post">
+      <label for="productivity">Productivity:</label>
+      <input type="number" id="productivity" name="productivity" min="0" max="10" required /><br />
+      <label for="quality">Quality:</label>
+      <input type="number" id="quality" name="quality" min="0" max="10" required /><br />
+      <label for="discipline">Discipline:</label>
+      <input type="number" id="discipline" name="discipline" min="0" max="10" required /><br />
+      <label for="initiative">Initiative:</label>
+      <input type="number" id="initiative" name="initiative" min="0" max="10" required /><br />
+      <button type="submit">Evaluate</button>
+    </form>
+  </body>
+</html>
