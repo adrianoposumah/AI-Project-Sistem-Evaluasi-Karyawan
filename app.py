@@ -113,7 +113,6 @@ def evaluate():
     weight_B = round(weight_B, 2)
     weight_C = round(weight_C, 2)
 
-    total_score = round((weight_A + weight_B + weight_C),2)
 
     management, job_specific, personality, score = define_fuzzy_variables()
     scoring = define_fuzzy_control_system(management, job_specific, personality, score)
@@ -127,11 +126,11 @@ def evaluate():
     final_score = scoring.output['score']
 
     score_membership = {
-        'unsatisfactory': fuzz.interp_membership(score.universe, score['unsatisfactory'].mf, total_score),
-        'satisfactory': fuzz.interp_membership(score.universe, score['satisfactory'].mf, total_score),
-        'good': fuzz.interp_membership(score.universe, score['good'].mf, total_score),
-        'very_good': fuzz.interp_membership(score.universe, score['very_good'].mf, total_score),
-        'outstanding': fuzz.interp_membership(score.universe, score['outstanding'].mf, total_score)
+        'unsatisfactory': fuzz.interp_membership(score.universe, score['unsatisfactory'].mf, final_score),
+        'satisfactory': fuzz.interp_membership(score.universe, score['satisfactory'].mf, final_score),
+        'good': fuzz.interp_membership(score.universe, score['good'].mf, final_score),
+        'very_good': fuzz.interp_membership(score.universe, score['very_good'].mf, final_score),
+        'outstanding': fuzz.interp_membership(score.universe, score['outstanding'].mf, final_score)
     }
 
     predikat = []
